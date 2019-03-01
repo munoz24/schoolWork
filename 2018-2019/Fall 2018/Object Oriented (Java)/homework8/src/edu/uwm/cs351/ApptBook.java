@@ -1,0 +1,968 @@
+package edu.uwm.cs351;
+
+import junit.framework.TestCase;
+
+/******************************************************************************
+ * This class is a homework assignment;
+ * A ApptBook is a collection of Appointments.
+ * The sequence can have a special "current element," which is specified and 
+ * accessed through five methods
+ * (start, getCurrent, removeCurrent, advance and isCurrent).
+ * NB: Unlike previous incarnations of this class, it doesn't
+ * include duplicates: if the same appointment is added more than once,
+ * the new one is ignored.
+ *
+ ******************************************************************************/
+public class ApptBook implements Cloneable
+{
+	// TODO: Declare the private static Node class for the BST.
+	// It should have a "data" field as well as "left" and "right".
+	// It should have a constructor (taking an appointment) but no methods.
+	// The fields of Node should have "default" access (neither public, nor private)
+	// and should not start with underscores.
+
+	private static class Node{
+		Appointment data;
+		Node right;
+		Node left;
+
+		Node(Appointment data) {
+			this.data = data;
+			this.right = null;
+			this.left = null;
+		}
+	}
+
+
+
+	// The data structure:
+	private int manyNodes;
+	private Node root;
+	private Node cursor;
+
+	private static boolean doReport = true; // used only by invariant checker
+
+	/**
+	 * Used to report an error found when checking the invariant.
+	 * By providing a string, this will help debugging the class if the invariant should fail.
+	 * @param error string to print to report the exact error found
+	 * @return false always
+	 */
+	private boolean report(String error) {
+		if (doReport) System.out.println("Invariant error found: " + error);
+		return false;
+	}
+
+	/**
+	 * A helper method for checking the invariant:
+	 * We check that all the nodes in are in the correct order.
+	 * All elements in the left subtree must be less (not equal!) to the
+	 * root's element, and all elements in the right subtree must be greater (not equal!).
+	 * If we notice something wrong, we return false (and report the problem).
+	 * @param n the subtree to check, may be null
+	 * @param lo the lower bound (if null, there is no lower bound)
+	 * @param hi the upper bound (if null, there is no upper bound)
+	 */
+	private boolean isInProperOrder(Node n, Appointment lo, Appointment hi) {
+		if(n != null) {
+			for(;n.left != null; n = n.left) {
+				if(n.data.compareTo(n.left.data) <= 0) return false;
+			}
+			for(;n.right != null; n = n.right) {
+				if(n.data.compareTo(n.right.data) >= 0) return false;
+			}
+		}
+
+		return true; // TODO
+	}
+
+	/**
+	 * A private helper function to count nodes in a subtree
+	 */
+	private int countNodes(Node r) {
+
+		int count = 0;
+		Node lefth = null;
+		Node righth = null;
+		//if r is a node
+		if(r != null) ++count;
+
+		if(r.left != null) {
+			lefth = r.left;
+		}
+
+		//count left side
+		for(; lefth != null; lefth = lefth.left) {
+			Node temp = lefth;
+			for(;temp.right != null;temp = temp.right) ++count;
+			++count;
+		}
+
+		if(r.right != null) {
+			righth = r.right;
+		}
+		//count right side
+		for(; righth != null; righth = righth.right) {
+			Node temp = righth;
+			for(;temp.left != null;temp = temp.left) ++count;
+			++count;
+		}
+
+
+		return count; // TODO
+	}
+
+	/**
+	 * A private helper function to determine if a node
+	 * is located in the tree.
+	 * This method should be efficient if the tree is balanced.
+	 * @param r subtree to look for node in (may be null)
+	 * @param n node to look for, must not be null, nor have null data.
+	 * @return whether n is in the subtree rooted by r.
+	 */
+	private boolean isInSubtree(Node r, Node n) {
+
+		if(n.data == null || n == null) return false;
+
+		if(r.equals(n)) return true;
+
+		if(r.left != null) {
+			isInSubtree(r.left, n);
+		}
+		if(r.right != null) {
+			isInSubtree(r.right,n);
+		}
+
+		//goes through all code so n is not in the tree
+		return false; // TODO (nice if recursive, but need not be)
+	}
+
+	/**
+	 * Check the invariant. 
+	 * Return false if any problem is found.  Returning the result
+	 * of {@link #report(String)} will make it easier to debug invariant problems.
+	 * @return whether invariant is currently true
+	 */
+	private boolean wellFormed() {
+		// Invariant:
+		// 1. tree must not include a cycle (combine with next test)
+		// 2. elements in tree must be in order
+		// 3. total number of elements must be the same as manyNodes
+		// 4. the cursor is null or points to a node in the tree
+
+		// Implementation:
+		// Use the private helper methods (defined above) to do most of the work.
+
+		// TODO
+		
+
+
+		Node lefth = root;
+		Node righth = root;
+		boolean check = false;
+
+		for(; lefth.left != null; lefth = lefth.left) {
+			if(lefth.equals(lefth.left) == true) return report("There is a loop in the left side");
+			if(cursor.equals(lefth)) check = true;
+		}
+		for(; righth.right != null; righth = righth.right) {
+			if(righth.equals(righth.right) == true) return report("There is a loop in the right side");
+			if(cursor.equals(righth)) check = true;
+		}
+		if(cursor != null || check != true) return report("Something wrong with cursor");
+
+		if(isInProperOrder(root, null, null) != true) return report("Nodes are not in proper order");
+
+		if(countNodes(root) != manyNodes) return report("Not correct number of Nodes");
+
+
+		 
+
+		// If no problems found, then return true:
+		return true;
+	}
+
+	private ApptBook(boolean doNotUse) {} // only for purposes of testing, do not change
+
+	/**
+	 * Create an empty sequence of appointments.
+	 * @param - none
+	 * @postcondition
+	 *   This appointment book is empty 
+	 **/   
+	public ApptBook( )
+	{
+		// TODO: Implemented by student.
+
+		manyNodes = 0;
+		root = null;
+		cursor = null;
+
+		//
+		assert wellFormed() : "invariant failed at end of constructor";
+	}
+
+
+	/**
+	 * Determine the number of elements in this sequence.
+	 * @param - none
+	 * @return
+	 *   the number of elements in this sequence
+	 **/ 
+	public int size( )
+	{
+		assert wellFormed() : "invariant wrong at start of size()";
+		// TODO: Implemented by student.
+		// This method shouldn't modify any fields, hence no assertion at end
+
+
+		return manyNodes;
+
+	}
+
+	/**
+	 * Set the current element at the front of this book.
+	 * @param - none
+	 * @postcondition
+	 *   The front element of this book is now the current element (but 
+	 *   if this book has no elements at all, then there is no current 
+	 *   element).
+	 **/  
+	public void start()
+	{
+		assert wellFormed() : "invariant wrong at start of start()";
+		// TODO: Implemented by student.
+
+		Node temp = root;
+
+		if(temp != null) {
+			for(; temp.left != null; temp = temp.left) {
+				cursor = temp;
+			}
+		}
+		else {
+			cursor = null;
+		}
+
+		assert wellFormed() : "invariant wrong at end of start()";
+	}
+
+	/**
+	 * Accessor method to determine whether this sequence has a specified 
+	 * current element that can be retrieved with the 
+	 * getCurrent method. 
+	 * @param - none
+	 * @return
+	 *   true (there is a current element) or false (there is no current element at the moment)
+	 **/
+	public boolean isCurrent( )
+	{
+		assert wellFormed() : "invariant wrong at start of getCurrent()";
+		// TODO: Implemented by student.
+		// This method shouldn't modify any fields, hence no assertion at end
+
+		return cursor != null;
+
+
+	}
+
+	/**
+	 * Accessor method to get the current element of this sequence. 
+	 * @param - none
+	 * @precondition
+	 *   isCurrent() returns true.
+	 * @return
+	 *   the current element of this sequence
+	 * @exception IllegalStateException
+	 *   Indicates that there is no current element, so 
+	 *   getCurrent may not be called.
+	 **/
+	public Appointment getCurrent( )
+	{
+		assert wellFormed() : "invariant wrong at start of getCurrent()";
+		// TODO: Implemented by student.
+		// This method shouldn't modify any fields, hence no assertion at end
+
+		if(isCurrent() != true) throw new IllegalStateException("getCurrent cant be called");
+
+		return cursor.data;
+
+	}
+
+	/**
+	 * Move forward, so that the current element will be the next element in
+	 * this book.
+	 * @param - none
+	 * @precondition
+	 *   hasCurrent() returns true. 
+	 * @postcondition
+	 *   If the current element was already the end element of this book 
+	 *   (with nothing after it), then there is no longer any current element. 
+	 *   Otherwise, the new element is the element immediately after the 
+	 *   original current element.
+	 * @exception IllegalStateException
+	 *   Indicates that there is no current element, so 
+	 *   advance may not be called.
+	 **/
+	public void advance( )
+	{
+		assert wellFormed() : "invariant wrong at start of advance()";
+		// TODO: Implemented by student (can use recursive helper or a while loop)
+		// NB: Must be efficient if tree is balanced.
+		
+		if(isCurrent() != true) {
+			throw new IllegalStateException("Cursor was null");
+		}
+		
+		cursor = cursor.right;
+		
+		assert wellFormed() : "invariant wrong at end of advance()";
+	}
+
+	/**
+	 * Remove the current element from this sequence.
+	 * @param - none
+	 * @precondition
+	 *   isCurrent() returns true.
+	 * @postcondition
+	 *   The current element has been removed from this sequence.
+	 *   The current element is advanced: if there is a following element,
+	 *   it is current now, otherwise there is no current element.
+	 * @exception IllegalStateException
+	 *   Indicates that there is no current element, so 
+	 *   removeCurrent may not be called. 
+	 **/
+	public void removeCurrent( )
+	{
+		assert wellFormed() : "invariant wrong at start of removeCurrent()";
+		throw new UnsupportedOperationException("removeacurrent not implemented for Homework #8");
+	}
+
+	/**
+	 * Set the current element to the first element that is equal
+	 * or greater than the guide. 
+	 * Unlike past assignments, this method must be efficient!
+	 * @param guide element to compare against, must not be null.
+	 */
+	public void setCurrent(Appointment guide) {
+		assert wellFormed() : "invariant broken at start of setCurrent";
+		// TODO: search for the appointment
+		
+		Node temp = root;
+		
+		while(temp.data.compareTo(guide) <= 0) {
+			
+		}
+		
+		
+		
+		assert wellFormed() : "invariant broken at end of setCurrent";
+	}
+
+	/**
+	 * Add a new element to this book, in order (in the last position possible).
+	 * The current element (if any) is not affected.
+	 * @param element
+	 *   the new element that is being added, must not be null
+	 * @postcondition
+	 *   A new copy of the element has been added to this book. The current
+	 *   element (whether or not is exists) is not changed.
+	 * @exception IllegalArgumentExcetion
+	 *   indicates the parameter is null
+	 **/
+	public void insert(Appointment element)
+	{
+		assert wellFormed() : "invariant failed at start of insert";
+		// TODO: Implemented by student.
+
+		if(element == null) throw new IllegalArgumentException("Element was null");
+
+
+		if(root == null) {
+			root = new Node(element);
+		}
+
+		Node current = root;
+		
+		while(true) {
+			Node parent = current;
+			
+			if(current.data.compareTo(element) < 0) {
+				current = current.right;
+				if(current == null) {
+					current = new Node(null);
+					parent.right = current;
+					break;
+				}
+			}else {
+				current = current.left;
+				if(current == null) {
+					current = new Node(null);
+					parent.left = current;
+					break;
+				}
+				
+			}
+		}
+		
+		current.data = element;
+		++manyNodes;
+		
+		assert wellFormed() : "invariant failed at end of insert";
+	}
+
+	/**
+	 * Insert all the appointments from the subtree of the node given
+	 * into this appointment book.  The argument must NOT be in this book
+	 * or else nontermination could happen! 
+	 */
+	private void insertAllHelper(Node p) {
+		// TODO: nice pre-order recursion (don't micro-manage!)
+	}
+
+	/**
+	 * Place all the appointments of another book (which may be the
+	 * same book as this!) into this book in order.
+	 * The elements are probably not going to be placed in a single block.
+	 * @param addend
+	 *   a book whose contents will be placed into this book
+	 * @precondition
+	 *   The parameter, addend, is not null. 
+	 * @postcondition
+	 *   The elements from addend have been placed into
+	 *   this book. The current element (if any) is
+	 *   unchanged.
+	 * @exception NullPointerException
+	 *   Indicates that addend is null. 
+	 * @exception OutOfMemoryError
+	 *   Indicates insufficient memory to increase the size of this book.
+	 **/
+	public void insertAll(ApptBook addend)
+	{
+		assert wellFormed() : "invariant failed at start of insertAll";
+		// TODO: Implemented by student. (use helper method)
+		// Unlike previous versions, no special cases needed
+		assert wellFormed() : "invariant failed at end of insertAll";
+		assert addend.wellFormed() : "invariant of addend broken in insertAll";
+	}
+
+
+	/**
+	 * Clone the given subtree by creating a new subtree.
+	 * If the subtree being cloned is the same node as the parameter's old
+	 * cursor, then set this cursor to the copy just created.
+	 * @param n subtree to copy, may be null
+	 * @param oldCursor old cursor, may be null
+	 * @return copy of subtree
+	 */
+	private Node cloneSubtree(Node n, Node oldCursor) {
+		
+		
+		
+		return null; // TODO
+	}
+
+	/**
+	 * Generate a copy of this sequence.
+	 * @param - none
+	 * @return
+	 *   The return value is a copy of this sequence. Subsequent changes to the
+	 *   copy will not affect the original, nor vice versa.
+	 *   Whatever was current in the original object is now current in the clone.
+	 * @exception OutOfMemoryError
+	 *   Indicates insufficient memory for creating the clone.
+	 **/ 
+	public ApptBook clone( )
+	{  	 
+		assert wellFormed() : "invariant wrong at start of clone()";
+
+		ApptBook result;
+
+		try
+		{
+			result = (ApptBook) super.clone( );
+		}
+		catch (CloneNotSupportedException e)
+		{  
+			// This exception should not occur. But if it does, it would probably
+			// indicate a programming error that made super.clone unavailable.
+			// The most common error would be forgetting the "Implements Cloneable"
+			// clause at the start of this class.
+			throw new RuntimeException
+			("This class does not implement Cloneable");
+		}
+
+		// TODO: Implemented by student.
+		// Now clone the tree using the helper method
+		
+		
+
+		assert wellFormed() : "invariant wrong at end of clone()";
+		assert result.wellFormed() : "invariant wrong for result of clone()";
+		return result;
+	}
+
+	public static class TestInvariantChecker extends TestCase {
+		ApptBook self = new ApptBook(false);
+		Time now = new Time();
+		Appointment h1 = new Appointment(new Period(now,Duration.HOUR),"1: think");
+		Appointment h2 = new Appointment(new Period(now,Duration.DAY),"2: current");
+		Appointment h3 = new Appointment(new Period(now.add(Duration.HOUR),Duration.HOUR),"3: eat");
+		Appointment h4 = new Appointment(new Period(now.add(Duration.HOUR.scale(2)),Duration.HOUR.scale(8)),"4: sleep");
+		Appointment h5 = new Appointment(new Period(now.add(Duration.DAY),Duration.DAY),"5: tomorrow");
+		Appointment h6 = new Appointment(new Period(now.add(Duration.YEAR),Duration.HOUR),"6: next year");
+		Appointment h7 = new Appointment(new Period(now.add(Duration.YEAR),Duration.DAY),"7: next year for a day");
+		Appointment h8 = new Appointment(new Period(now.add(Duration.YEAR.add(Duration.DAY)),Duration.HOUR),"8: a year and a day later");
+		Appointment h9 = new Appointment(new Period(now.add(Duration.YEAR.scale(2)),Duration.HOUR),"9: two years later");
+
+		Appointment h1x = new Appointment(new Period(now,Duration.HOUR),"1: think (x)");
+		Appointment h2x = new Appointment(new Period(now,Duration.DAY),"2: current (x)");
+		Appointment h3x = new Appointment(new Period(now.add(Duration.HOUR),Duration.HOUR),"3: eat (x)");
+		Appointment h4x = new Appointment(new Period(now.add(Duration.HOUR.scale(2)),Duration.HOUR.scale(8)),"4: sleep (x)");
+		Appointment h5x = new Appointment(new Period(now.add(Duration.DAY),Duration.DAY),"5: tomorrow (x)");
+		Appointment h6x = new Appointment(new Period(now.add(Duration.YEAR),Duration.HOUR),"6: next year (x)");
+		Appointment h7x = new Appointment(new Period(now.add(Duration.YEAR),Duration.DAY),"7: next year for a day (x)");
+		Appointment h8x = new Appointment(new Period(now.add(Duration.YEAR.add(Duration.DAY)),Duration.HOUR),"8: a year and a day later (x)");
+
+		@Override
+		protected void setUp() {
+			self = new ApptBook(false);
+			doReport = false;
+		}
+
+
+		/// test Ix: is in order tests. 
+
+		public void testI0() {
+			assertEquals("null tree",true,self.isInProperOrder(null, null, null));
+			assertEquals("null tree",true,self.isInProperOrder(null, null, h5));
+			assertEquals("null tree",true,self.isInProperOrder(null, h3, null));
+			assertEquals("null tree",true,self.isInProperOrder(null, h3, h5));
+		}
+
+		public void testI1() {
+			Node a1 = new Node(h1);
+			Node b2 = new Node(h2);
+			assertEquals("one node tree",true,self.isInProperOrder(a1, null, null));
+			assertEquals("one node tree",true,self.isInProperOrder(a1, null, h2));
+			assertEquals("one node tree out of range",false,self.isInProperOrder(a1, h1, null));
+			assertEquals("one node tree out of range",false,self.isInProperOrder(b2, null, h2));
+			assertEquals("one node tree in range",true,self.isInProperOrder(b2, h1, null));
+			assertEquals("one node tree in range",true,self.isInProperOrder(b2, h1, h3));
+		}
+
+		public void testI2() {
+			Node a1 = new Node(h1);
+			Node a2 = new Node(h1);
+			Node b2 = new Node(h2);
+			a1.left = a2;
+			assertEquals("malformed tree",false, self.isInProperOrder(a1, null, null));
+			b2.left = a2;
+			assertEquals("OK tree (ba)",true,self.isInProperOrder(b2, null, null));
+		}
+
+		public void testI3() {
+			Node a1 = new Node(h1);
+			Node a2 = new Node(h1);
+			Node a3 = new Node(h1);
+			Node b2 = new Node(h2);
+			a1.right = a2;
+			assertEquals("malformed tree",false, self.isInProperOrder(a1, null, null));
+			a1.right = b2;
+			assertEquals("OK tree (ab)",true,self.isInProperOrder(a1, null, null));
+			a1.left=a3;
+			assertEquals("malformed tree",false, self.isInProperOrder(a1, null, null));
+			a1.left = a1.right = null;
+			assertEquals("good tree",true, self.isInProperOrder(a1, null, null));
+		}
+
+		public void testI4() {
+			Node a1 = new Node(h1);
+			Node b2 = new Node(h2);
+			Node c3 = new Node(h3);
+
+			b2.left = a1;
+			b2.right = c3;
+			assertEquals("OK tree (bac)",true,self.isInProperOrder(b2, null, null));
+			assertEquals("OK tree (bac) in range",true,self.isInProperOrder(b2, null, h3x));
+			assertEquals("tree (bac) not in hi range",false,self.isInProperOrder(b2, null, h3));
+			assertEquals("tree (bac) not in lo range",false,self.isInProperOrder(b2, h1, null));
+		}
+
+		public void testI5() {
+			Node a1 = new Node(h1);
+			Node a2 = new Node(h1);
+			Node a3 = new Node(h1);
+
+			a1.left = a2;
+			assertEquals("malformed tree",false, self.isInProperOrder(a1, null, null));
+			a1.left=null;
+			a1.right = a2;
+			assertEquals("malformed tree",false, self.isInProperOrder(a1, null, null));
+			a1.left=a3;
+			assertEquals("malformed tree",false, self.isInProperOrder(a1, null, null));
+			a1.left = a1.right = null;
+			assertEquals("good tree",true, self.isInProperOrder(a1, null, null));
+		}
+
+
+		public void testI6() {
+			Node a = new Node(h1);
+			Node b = new Node(h2);
+			Node c = new Node(h3);
+			Node d = new Node(h4);
+			Node e = new Node(h5);
+			Node f = new Node(h6);
+
+			c.left = b;
+			b.left = a;
+			c.right = e;
+			e.left = d;
+
+			e.data = null;
+			assertEquals("null data in tree",false, self.isInProperOrder(c, null, null));
+			e.data = h5;
+			assertEquals("good tree",true, self.isInProperOrder(c, null, null));
+
+			e.left=f;
+			f.left=d;
+			assertEquals("malformed tree",false, self.isInProperOrder(c, null, null));
+			f.left=null;
+			e.right=f;
+			e.left=d;
+			assertEquals("good tree",true, self.isInProperOrder(c, null, null));
+
+			Node aa = new Node(h1x);
+			a.left=aa;
+			assertEquals("malformed tree",false, self.isInProperOrder(c, null, null));
+			a.left=null;
+			a.right=aa;
+			assertEquals("good tree",true, self.isInProperOrder(c, null, null));
+		}
+
+		public void testI7() {
+			Node a = new Node(h1);
+			Node b = new Node(h2);
+			Node c = new Node(h3);
+			Node d = new Node(h4);
+			Node e = new Node(h5);
+			Node f = new Node(h6);
+
+			a.right = b;
+			b.right = c;
+			c.right = d;
+			d.right = e;
+			e.left=f;
+			assertEquals("malformed tree",false, self.isInProperOrder(a, null, null));
+			e.left=null;
+			a.left=f;
+			assertEquals("malformed tree",false, self.isInProperOrder(a, null, null));
+			a.left=b;
+			a.right=null;
+			assertEquals("malformed tree",false, self.isInProperOrder(a, null, null));
+			b.right=null;
+			a.left=null;
+			a.right=c;
+			c.left=b;
+			assertEquals("good tree",true, self.isInProperOrder(a, null, null));
+		}
+
+		public void testI9() {
+			Node n1 = new Node(h1);
+			Node n2 = new Node(h2);
+			Node n3 = new Node(h3);
+			Node n4 = new Node(h4);
+			n2.left = n1;
+			n2.right = n3;
+			n1.right = n2;
+			assertEquals("cyclic tree",false,self.isInProperOrder(n2, null, null));
+			n1.right = null;
+			n3.left = n2;
+			assertEquals("cyclic tree",false,self.isInProperOrder(n2, null, null));
+			n3.left = null;
+			n3.right = n3;
+			assertEquals("cyclic tree",false,self.isInProperOrder(n2, null, null));
+			n3.right = n4;
+			assertEquals("acyclic tree",true,self.isInProperOrder(n2, null, null));
+			n4.left = n3;
+			assertEquals("cyclic tree",false,self.isInProperOrder(n2, null, null));
+		}
+
+
+		/// testNx: testing countNodes
+
+		public void testN1() {
+			Node a = new Node(h1);
+			assertEquals(1,self.countNodes(a));
+		}
+
+		public void testN2() {
+			Node a1 = new Node(h1);
+			Node a2 = new Node(h2);
+			Node a3 = new Node(h3);
+			a1.left =a2;
+			a2.right = a3;
+			assertEquals(3,self.countNodes(a1));
+		}
+
+		public void testN3() {
+			Node a1 = new Node(h1);
+			Node a2 = new Node(h2);
+			Node a3 = new Node(h3);
+			a1.left = a1.right = a2; a2.left = a2.right = a3;
+			assertEquals(7,self.countNodes(a1));
+		}
+
+
+		/// testSx: tests for isInSubtree
+
+		public void testS0() {
+			Node n1 = new Node(h1);
+			assertFalse(self.isInSubtree(null, n1));
+		}
+
+		public void testS1() {
+			Node n1 = new Node(h1);
+			assertTrue(self.isInSubtree(n1, n1));
+		}
+
+		public void testS2() {
+			Node n2 = new Node(h2);
+			Node n2a = new Node(h2);
+			assertFalse(self.isInSubtree(n2, n2a));
+		}
+
+		public void testS3() {
+			Node n2 = new Node(h2);
+			Node n2a = new Node(h2);
+			n2.left = n2.right = n2a; // Do not look further!
+			assertFalse(self.isInSubtree(n2, n2a));
+		}
+
+		public void testS4() {
+			Node n1 = new Node(h1);
+			Node n2 = new Node(h2);
+			Node n3 = new Node(h3);
+			n2.left = n1;
+			n2.right = n3;
+			assertTrue(self.isInSubtree(n2, n1));
+			assertTrue(self.isInSubtree(n2, n2));
+			assertTrue(self.isInSubtree(n2, n3));
+		}
+
+		public void testS5() {
+			Node n1 = new Node(h1);
+			Node n2 = new Node(h2);
+			Node n3 = new Node(h3);
+			n2.left = n1;
+			n2.right = n3;
+			assertFalse(self.isInSubtree(n2, new Node(h1)));
+			assertFalse(self.isInSubtree(n2, new Node(h2)));
+			assertFalse(self.isInSubtree(n2, new Node(h3)));
+		}
+
+		public void testS6() {
+			Node n1 = new Node(h1);
+			Node n2 = new Node(h2);
+			Node n3 = new Node(h3);
+			n2.left = n1;
+			n2.right = n3;
+			Node n1a = new Node(h1);
+			Node n2a = new Node(h2);
+			Node n2b = new Node(h2);
+			Node n3a = new Node(h3);
+			n1.left = n1a;
+			n1.right = n2a;
+			n3.left = n2b;
+			n3.right = n3a;
+			// don't keep on looking!
+			assertFalse(self.isInSubtree(n2, n1a));
+			assertFalse(self.isInSubtree(n2, n2a));
+			assertFalse(self.isInSubtree(n2, n2b));
+			assertFalse(self.isInSubtree(n2, n3a));
+		}
+
+		public void testS7() {
+			Node a = new Node(h1);
+			Node b = new Node(h2);
+			Node c = new Node(h3);
+			Node d = new Node(h4);
+			Node e = new Node(h5);
+			Node f = new Node(h6);
+
+			a.right = d;
+			b.right = c;
+			d.left = b;
+			d.right = e;
+			e.right = f;
+
+			assertTrue(self.isInSubtree(a, a));
+			assertTrue(self.isInSubtree(a, b));
+			assertTrue(self.isInSubtree(a, c));
+			assertTrue(self.isInSubtree(a, d));
+			assertTrue(self.isInSubtree(a, e));
+			assertTrue(self.isInSubtree(a, f));
+		}
+
+		public void testS8() {
+			Node a = new Node(h1);
+			Node b = new Node(h2);
+			Node c = new Node(h3);
+			Node d = new Node(h4);
+			Node e = new Node(h5);
+			Node f = new Node(h6);
+
+			a.right = b;
+			d.left = c;
+			b.left = d;
+			b.right = e;
+			e.right = f;
+
+			assertTrue(self.isInSubtree(a, a));
+			assertTrue(self.isInSubtree(a, b));
+			assertFalse(self.isInSubtree(a, c)); // lost in tree
+			assertFalse(self.isInSubtree(a, d)); // lost in tree
+			assertTrue(self.isInSubtree(a, e));
+			assertTrue(self.isInSubtree(a, f));
+		}
+
+
+		/// textWx: Tests for wellFormed
+
+		public void testW0() {
+			self.manyNodes = 1;
+			assertFalse(self.wellFormed());
+			self.manyNodes = 0;
+			doReport = true;
+			assertTrue(self.wellFormed());
+		}
+
+		public void testW1() {
+			self.root = new Node(h1);
+			assertFalse(self.wellFormed());
+			self.manyNodes = 1;
+			assertTrue(self.wellFormed());
+			self.manyNodes = 2;
+			assertFalse(self.wellFormed());
+			self.manyNodes = 1;
+			self.root.data = null;
+			assertFalse(self.wellFormed());
+		}
+
+		public void testW2() {
+			Node a1 = new Node(h1);
+			Node a2 = new Node(h1);
+			Node b = new Node(h2);
+			self.manyNodes = 2;
+			assertFalse(self.wellFormed());
+			self.root = a1;
+			assertFalse(self.wellFormed());
+			a1.right = a2;
+			assertEquals(false, self.wellFormed());
+			a1.right = a1;
+			assertEquals(false, self.wellFormed());
+			a1.right = b;
+			assertEquals(true, self.wellFormed());
+
+			b.left = a1;
+			assertFalse(self.wellFormed());
+			self.root = b;
+			assertFalse(self.wellFormed());
+			a1.right = null;
+			assertTrue(self.wellFormed());
+
+			b.right = b;
+			assertFalse(self.wellFormed());
+		}
+
+		public void testW3() {
+			Node a = new Node(h1);
+			Node b = new Node(h2);
+			Node c = new Node(h3);
+			c.left = a;
+			c.right = b;
+			self.root = c;
+
+			self.manyNodes = 3;			
+			assertEquals(false, self.wellFormed());
+			self.manyNodes = 1;
+			assertFalse(self.wellFormed());
+		}
+
+		public void testW4() {
+			Node a = new Node(h1);
+			Node b = new Node(h2);
+			Node c = new Node(h3);
+			Node d = new Node(h4);
+			Node e = new Node(h5);
+			Node f = new Node(h6);
+			Node g = new Node(h7);
+			Node h = new Node(h8);
+			Node i = new Node(h9);
+
+			self.root = e;
+			e.left = c;
+			c.right = d;
+			c.left = a;
+			a.right = b;
+			e.right = h;
+			h.left = g;
+			g.left = f;
+			h.right = i;
+			self.manyNodes = 9;
+			//you may want to draw a picture
+			assertEquals(true, self.wellFormed());
+
+			self.manyNodes = 10;
+			assertFalse("incorrect count", self.wellFormed());
+
+			a.left = new Node(h1x);
+			assertFalse(self.wellFormed());
+			a.left = null;
+
+			b.left = new Node(h1);
+			assertFalse(self.wellFormed());
+			b.left = null;
+			b.right = new Node(h3x);
+			assertFalse(self.wellFormed());
+			b.right = null;
+
+			--self.manyNodes;
+			assertTrue(self.wellFormed());
+			++self.manyNodes;
+
+			d.left = new Node(h2x);
+			assertFalse(self.wellFormed());
+			d.left = null;
+			d.right = new Node(h5x);
+			assertFalse(self.wellFormed());
+			d.right = null;
+
+			f.left = new Node(h4x);
+			assertFalse(self.wellFormed());
+			f.left = null;
+			f.right = new Node(h7x);
+			assertFalse(self.wellFormed());
+			f.right = null;
+
+			g.right = new Node(h8x);
+			assertFalse(self.wellFormed());
+			g.right = null;
+
+			--self.manyNodes;
+			assertTrue(self.wellFormed());
+			++self.manyNodes;
+
+			i.left = new Node(h7x);
+			assertFalse(self.wellFormed());
+			i.left = null;
+			i.right = new Node(h8x);
+			assertFalse(self.wellFormed());
+			i.right = null;
+
+			--self.manyNodes;
+			assertTrue(self.wellFormed());			
+		}
+
+	}
+}
